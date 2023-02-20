@@ -6,19 +6,19 @@ import network
 import socket
 import sys
 import os
-import wifi_info     # The SSID and WIFI password
+import wifi_info     # The SSID and WIFI password, create your own wifi_info.py file that has two variables, ssid and wifi_password, stored as strings
     
 # Replace with your own SSID and WIFI password
 ssid = wifi_info.ssid
 wifi_password = wifi_info.wifi_password
-my_ip_addr = '192.168.0.22'
+my_ip_addr = '192.168.0.22'  # I find a fixed IP address easier for testing...
 
 # Please see https://docs.micropython.org/en/latest/library/network.WLAN.html
 # Try to connect to WIFI
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
-# Specify the IP address
+# Specify the IP address and the other numbers - if these are not correct, then the pico won't connect
 wlan.ifconfig((my_ip_addr, '255.255.255.0', '192.168.0.1', '8.8.8.8'))
 
 # Connect
@@ -81,6 +81,7 @@ while True:
         accept_worked = 1
     except:
         print('Timeout waiting on accept - reset the pico if you want to break out of this')
+        # Need this small sleep statement so that the pico can respond to a keyboard break, or the "stop" button on Thonny
         time.sleep(0.5)
         
     if accept_worked == 1:
@@ -91,7 +92,7 @@ while True:
             print(request)
             request = str(request)
             
-            # Default response is error message                        
+            # Default response is error message - TODO - make a better HTML response                        
             response = """<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>Not found...</BODY></HTML>"""
                     
             # Parse the request for the filename - in the root directory
@@ -109,26 +110,31 @@ while True:
                     print("filename: " + f_name)
                     
                     try:                    
-                        # Get the file size, in bytes
-                        temp = os.stat(f_name)
-                    
+                        # Get the file size, in bytes, for reference
+                        temp = os.stat(f_name)                    
                         f_size_bytes = temp[6]
                     
+                        # Open the file
                         fid = open(f_name, 'rb')
+                        # Read the contents
                         response = fid.read()
+                        # Echo the length
                         print(len(response))
+                        # Close the file
                         fid.close()
                     except:
                         print("Issue finding file...")
                         
-                                
+            # Send a response - you can add more details here if necessary                                
             cl.send('HTTP/1.0 200 OK\r\nContent-Length: ' + str(len(response)) + '\r\nConnection: Keep-Alive\r\n\r\n')
+            # Send the response, either the file not found, or the file
             cl.sendall(response)
                 
+            # All done, close!
             cl.close()
             
         except OSError as e:
             cl.close()
-            print('connection closed')
+            print('yikes, error, connection closed')
             
 
