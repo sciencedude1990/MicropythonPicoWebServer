@@ -1,7 +1,7 @@
 # MicropythonPicoWebServer
 A simple web server using just micropython
 
-Using only MicroPython code, a webserver using a raspberry pi pico.
+Using only MicroPython code, a webserver using a raspberry pi pico W.
 
 It will serve up HTML with images!
 
