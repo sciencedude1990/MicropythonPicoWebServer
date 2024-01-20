@@ -1,24 +1,30 @@
-# A very simple web server - good for running on a raspberry pi pico W
+# Web server
+# If you call up the IP address, it will serve up the usage
 
 # Imports
 import time
 import network
 import socket
+import machine
+from machine import Pin
 import sys
 import os
-import wifi_info     # The SSID and WIFI password, create your own wifi_info.py file that has two variables, ssid and wifi_password, stored as strings
+import wifi_info     # The SSID and WIFI password
+
+# Define the pin variable
+led = Pin("LED", Pin.OUT)
     
 # Replace with your own SSID and WIFI password
 ssid = wifi_info.ssid
 wifi_password = wifi_info.wifi_password
-my_ip_addr = '192.168.0.22'  # I find a fixed IP address easier for testing...
+my_ip_addr = '192.168.0.31'
 
 # Please see https://docs.micropython.org/en/latest/library/network.WLAN.html
 # Try to connect to WIFI
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
-# Specify the IP address and the other numbers - if these are not correct, then the pico won't connect
+# Specify the IP address
 wlan.ifconfig((my_ip_addr, '255.255.255.0', '192.168.0.1', '8.8.8.8'))
 
 # Connect
@@ -59,7 +65,7 @@ except:
     
 # Listen
 s.listen(4)
-print('listening on ', addr)
+print('listening on', addr)
 
 # Timeout for the socket accept, i.e., s.accept()
 s.settimeout(5)
@@ -75,14 +81,14 @@ while True:
         
     # Main loop
     accept_worked = 0
+    
     try:
         print("Run s.accept()")
         cl, addr = s.accept()
         accept_worked = 1
     except:
         print('Timeout waiting on accept - reset the pico if you want to break out of this')
-        # Need this small sleep statement so that the pico can respond to a keyboard break, or the "stop" button on Thonny
-        time.sleep(0.5)
+        time.sleep(0.3)
         
     if accept_worked == 1:
         try:
@@ -91,14 +97,37 @@ while True:
             print("request:")
             print(request)
             request = str(request)
-            
-            # Default response is error message - TODO - make a better HTML response                        
+                        
+            # Default response is error message                        
             response = """<HTML><HEAD><TITLE>Error</TITLE></HEAD><BODY>Not found...</BODY></HTML>"""
-                    
-            # Parse the request for the filename - in the root directory
+            
+            # Parse the request for the set or get
+            done_parse = 0
+            
+            # Look for LED get
+            led_get = request.find('?LED=?')
+            if led_get != -1:
+                response = str(led.value())
+                done_parse = 1
+            
+            # Look for LED set to 0
+            led_set = request.find('?LED=0')
+            if led_set != -1:
+                led.value(0)
+                done_parse = 1
+                response = """<HTML><HEAD><TITLE>LED</TITLE></HEAD><BODY>LED 0</BODY></HTML>"""
+            
+            # Look for LED set to 1
+            led_set = request.find('?LED=1')
+            if led_set != -1:
+                led.value(1)
+                done_parse = 1
+                response = """<HTML><HEAD><TITLE>LED</TITLE></HEAD><BODY>LED 1</BODY></HTML>"""
+                
+            # Parse the request for a filename
             # Look for the "GET" text
             base_file = request.find('GET /')            
-            if base_file == 2:
+            if (base_file == 2) & (done_parse == 0):
                 # Look for the "HTTP" text
                 end_name = request.find(' HTTP')
                 
@@ -109,32 +138,38 @@ while True:
                     # Print the filename
                     print("filename: " + f_name)
                     
+                    found_file = 0
                     try:                    
-                        # Get the file size, in bytes, for reference
-                        temp = os.stat(f_name)                    
-                        f_size_bytes = temp[6]
-                    
-                        # Open the file
-                        fid = open(f_name, 'rb')
-                        # Read the contents
-                        response = fid.read()
-                        # Echo the length
-                        print(len(response))
-                        # Close the file
-                        fid.close()
-                    except:
-                        print("Issue finding file...")
+                        # Get the file size, in bytes
+                        temp = os.stat(f_name)
+                        found_file = 1
                         
-            # Send a response - you can add more details here if necessary                                
+                    except OSError as error:
+                        # Likely the file was not found
+                        print(error)
+                        print("Likely, bad filename...")
+                                                
+                    if found_file == 1:
+                        try:
+                            f_size_bytes = temp[6]
+                            fid = open(f_name, 'rb')
+                            response = fid.read()
+                            print(len(response))
+                            fid.close()
+                        except OSError as error:
+                            print(error)
+                            print("Likely, file too big to open and send...")
+                                                        
             cl.send('HTTP/1.0 200 OK\r\nContent-Length: ' + str(len(response)) + '\r\nConnection: Keep-Alive\r\n\r\n')
-            # Send the response, either the file not found, or the file
             cl.sendall(response)
-                
-            # All done, close!
+                        
+            # Send the response
+            cl.send('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
+            cl.send(response)
             cl.close()
             
         except OSError as e:
+            print(e)
             cl.close()
-            print('yikes, error, connection closed')
+            print('connection closed')
             
-
