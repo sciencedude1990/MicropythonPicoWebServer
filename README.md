@@ -9,6 +9,9 @@ You need to create wifi_info.py.  The file has two string variables, ssid and wi
 
 I also included a simple html and image file, so that you can see that the pico w and Micropython can serve up a simple webpage with an image.
 
-Lastly, I included a .png favicon.ico in case you need one.  :)
+I included a .png favicon.ico in case you need one.  :)
+
+Lastly, check out led_website.html - you can set the status of the pico w led, and it will automatically query and display the status of the led without refreshing the page using XMLHttpRequest.
+
 
 https://hackaday.io/project/189675-raspberry-pi-pico-w-super-simple-webserver
