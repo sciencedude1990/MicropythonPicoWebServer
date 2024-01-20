@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<title>Test XML</title>
+
+</head>
+
+<body>
+
+<script>
+
+// A timer to request the LED status every 2 seconds
+var myTimer = {    
+    start : function() {        
+        // Request updates every 2000 milliseconds
+        // Calls requestLEDStatus()
+        this.interval = setInterval(requestLEDStatus, 2000);
+        },  
+    stop : function() {
+        clearInterval(this.interval);
+        },
+}
+
+// Start the timer
+myTimer.start();
+
+// Request the status of the LED (called by the timer)
+function requestLEDStatus() {
+
+  // Create XMLHttpRequest
+  var xhttp = new XMLHttpRequest();
+  
+  // When data comes back, execute this code
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    updateLEDStatus(this);
+    }
+  };
+  
+  // Get the "GET" command ready
+  xhttp.open("GET", "?LED=?", true);
+  
+  // Send it, and wait for the data to come back
+  xhttp.send();
+}
+
+// Executes when xhttp gets a response
+function updateLEDStatus(xhttp) {
+// Assign the text to the paragraph with name "led_status"
+  document.getElementById("led_status").innerHTML = xhttp.response;    
+}
+
+// Call this function to send the command ?LED=0
+function led0() {
+  
+  // Create XMLHttpRequest
+  var xhttp = new XMLHttpRequest();
+  
+  // When data comes back, execute this code
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    ignoreResponse(this);
+    }
+  };
+  
+  // Get the "GET" command ready
+  xhttp.open("GET", "?LED=0", true);
+  
+  // Send it, and wait for the data to come back
+  xhttp.send();
+}
+
+// Call this function to send the command ?LED=1
+function led1() {
+  
+  // Create XMLHttpRequest
+  var xhttp = new XMLHttpRequest();
+  
+  // When data comes back, execute this code
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    ignoreResponse(this);
+    }
+  };
+  
+  // Get the "GET" command ready
+  xhttp.open("GET", "?LED=1", true);
+  
+  // Send it, and wait for the data to come back
+  xhttp.send();
+}
+
+// Execute to process the data returned
+function ignoreResponse(xhttp) {
+  // Get the response
+  var xmlDoc = xhttp.responseXML;    
+}
+
+</script>
+
+The current status of the LED <p id="led_status">...waiting to update</p>
+<br>
+<br>
+Press the button to change the state of the LED
+<br>
+<br>
+&nbsp;&nbsp;<button type="button" onclick="led0()">LED=0</button> &nbsp;&nbsp;&nbsp;
+<button type="button" onclick="led1()">LED=1</button>
+</body>
+</html>
